@@ -22,9 +22,15 @@ namespace AsyncStreams
                 group t by t.SrcAccount into g
                 select g;
 
+            grps = grps.SelectAwait(async x =>
+            {
+                await Task.Delay(500);
+                return x; 
+            });
+
             await foreach (var grp in grps)
             {
-                Console.WriteLine($"Account: {grp.Key} Count: {grp.CountAsync()} Sum: {grp.SumAsync(t=>t.usdAmount)}");
+                Console.WriteLine($"Account: {grp.Key} Count: {grp.CountAsync()} Sum: {grp.SumAsync(t => t.usdAmount)}");
             }
         }
 
