@@ -15,7 +15,7 @@ namespace AsyncStreams
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(1000);
 
-            await foreach (var transaction in transactions.WithCancellation(cts.Token))
+            await foreach (var transaction in transactions.WithCancellation(cts.Token).ConfigureAwait(false))
             {
                 Console.WriteLine($"Transaction from {transaction.SrcAccount} to {transaction.DstAccount}");
             }
