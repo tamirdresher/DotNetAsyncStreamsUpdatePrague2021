@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Reactive.Linq;
 
 namespace AsyncStreams
 {
@@ -11,39 +12,23 @@ namespace AsyncStreams
     {
         static async Task Main(string[] args)
         {
-            var transactions = ReadLines("transactions.csv");
-                       
-            IAsyncEnumerable<IAsyncGrouping<string, Transaction>> grps =
-                from t in transactions
-                where t.USDAmount > 0
-                group t by t.SrcAccount into g
-                select g;
-            
-            var firstAct = await grps.FirstAsync();
+            var first = AsyncEnumerable.Range(1, 10)
+                .Do(async x => await Task.Delay(1000))
+                .ToObservable();
+            var second = AsyncEnumerable.Range(20, 10)
+                .Do(async x => await Task.Delay(500))
+                .ToObservable();
 
-            await foreach (var transactionPair in firstAct.Buffer(2))
+            var combined =
+                first.CombineLatest(second)
+                    .Select(pair=>pair.First+pair.Second)
+                    .ToAsyncEnumerable();
+
+            await foreach (var x in combined)
             {
-                Console.WriteLine($"T1: {transactionPair[0].USDAmount} T2: {transactionPair[1].USDAmount}");
+                Console.WriteLine(x);
             }
         }
 
-        public static async IAsyncEnumerable<Transaction> ReadLines(string path, [EnumeratorCancellation] CancellationToken token = default)
-        {
-            var lines = await System.IO.File.ReadAllLinesAsync(path);
-            foreach (var line in lines)
-            {
-                token.ThrowIfCancellationRequested();
-                string[] arr = line.Split(',');
-                yield return new Transaction(
-                    SrcAccount: arr[0],
-                    DstAccount: arr[1],
-                    Timestamp: arr[2],
-                    USDAmount: decimal.Parse(arr[3]));
-
-                await Task.Delay(500);
-            }
-        }
-
-        public record Transaction(string SrcAccount, string DstAccount, string Timestamp, decimal USDAmount);
     }
 }
