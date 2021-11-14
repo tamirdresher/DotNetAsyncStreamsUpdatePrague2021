@@ -16,15 +16,16 @@ namespace AsyncStreams
                 Console.WriteLine($"Transaction from {transaction.SrcAccount} to {transaction.DstAccount}");
             }
 
-            //var grps = from t in transactions
-            //           where t.usdAmount > 0
-            //           group t by t.SrcAccount into g
-            //           select g;
+            IAsyncEnumerable<IAsyncGrouping<string, Transaction>> grps =
+                from t in transactions
+                where t.usdAmount > 0
+                group t by t.SrcAccount into g
+                select g;
 
-            //foreach (var grp in grps)
-            //{
-            //    Console.WriteLine($"Key: {grp.Key} Count: {grp.Count()}");
-            //}
+            await foreach (var grp in grps)
+            {
+                Console.WriteLine($"Account: {grp.Key} Count: {grp.CountAsync()} Sum: {grp.SumAsync(t=>t.usdAmount)}");
+            }
         }
 
         public static async IAsyncEnumerable<Transaction> ReadLines(string path)
@@ -36,11 +37,11 @@ namespace AsyncStreams
                 yield return new Transaction(
                     SrcAccount: arr[0],
                     DstAccount: arr[1],
-                    timestamp:  arr[2],
-                    usdAmount:  decimal.Parse(arr[3]));
+                    timestamp: arr[2],
+                    usdAmount: decimal.Parse(arr[3]));
             }
         }
-        
-        public record Transaction(string SrcAccount, string DstAccount, string timestamp, decimal usdAmount );
+
+        public record Transaction(string SrcAccount, string DstAccount, string timestamp, decimal usdAmount);
     }
 }
