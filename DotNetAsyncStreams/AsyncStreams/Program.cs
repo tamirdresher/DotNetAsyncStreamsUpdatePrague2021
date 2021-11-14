@@ -19,12 +19,11 @@ namespace AsyncStreams
                 .Do(async x => await Task.Delay(500))
                 .ToObservable();
 
-            var combined =
-                first.CombineLatest(second)
-                    .Select(pair=>pair.First+pair.Second)
+            var merged =
+                first.Merge(second)
                     .ToAsyncEnumerable();
 
-            await foreach (var x in combined)
+            await foreach (var x in merged)
             {
                 Console.WriteLine(x);
             }
