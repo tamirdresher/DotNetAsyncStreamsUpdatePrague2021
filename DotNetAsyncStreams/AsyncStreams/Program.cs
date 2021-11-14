@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace AsyncStreams
 {
@@ -10,8 +12,10 @@ namespace AsyncStreams
         static async Task Main(string[] args)
         {
             var transactions = ReadLines("transactions.csv");
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(1000);
 
-            await foreach (var transaction in transactions)
+            await foreach (var transaction in transactions.WithCancellation(cts.Token))
             {
                 Console.WriteLine($"Transaction from {transaction.SrcAccount} to {transaction.DstAccount}");
             }
@@ -34,17 +38,20 @@ namespace AsyncStreams
             }
         }
 
-        public static async IAsyncEnumerable<Transaction> ReadLines(string path)
+        public static async IAsyncEnumerable<Transaction> ReadLines(string path, [EnumeratorCancellation] CancellationToken token = default)
         {
             var lines = await System.IO.File.ReadAllLinesAsync(path);
             foreach (var line in lines)
             {
+                token.ThrowIfCancellationRequested();
                 string[] arr = line.Split(',');
                 yield return new Transaction(
                     SrcAccount: arr[0],
                     DstAccount: arr[1],
                     timestamp: arr[2],
                     usdAmount: decimal.Parse(arr[3]));
+
+                await Task.Delay(500);
             }
         }
 
