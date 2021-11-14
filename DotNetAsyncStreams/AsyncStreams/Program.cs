@@ -12,29 +12,18 @@ namespace AsyncStreams
         static async Task Main(string[] args)
         {
             var transactions = ReadLines("transactions.csv");
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(1000);
-
-            await foreach (var transaction in transactions.WithCancellation(cts.Token).ConfigureAwait(false))
-            {
-                Console.WriteLine($"Transaction from {transaction.SrcAccount} to {transaction.DstAccount}");
-            }
-
+                       
             IAsyncEnumerable<IAsyncGrouping<string, Transaction>> grps =
                 from t in transactions
-                where t.usdAmount > 0
+                where t.USDAmount > 0
                 group t by t.SrcAccount into g
                 select g;
+            
+            var firstAct = await grps.FirstAsync();
 
-            grps = grps.SelectAwait(async x =>
+            await foreach (var transactionPair in firstAct.Buffer(2))
             {
-                await Task.Delay(500);
-                return x; 
-            });
-
-            await foreach (var grp in grps)
-            {
-                Console.WriteLine($"Account: {grp.Key} Count: {grp.CountAsync()} Sum: {grp.SumAsync(t => t.usdAmount)}");
+                Console.WriteLine($"T1: {transactionPair[0].USDAmount} T2: {transactionPair[1].USDAmount}");
             }
         }
 
@@ -48,13 +37,13 @@ namespace AsyncStreams
                 yield return new Transaction(
                     SrcAccount: arr[0],
                     DstAccount: arr[1],
-                    timestamp: arr[2],
-                    usdAmount: decimal.Parse(arr[3]));
+                    Timestamp: arr[2],
+                    USDAmount: decimal.Parse(arr[3]));
 
                 await Task.Delay(500);
             }
         }
 
-        public record Transaction(string SrcAccount, string DstAccount, string timestamp, decimal usdAmount);
+        public record Transaction(string SrcAccount, string DstAccount, string Timestamp, decimal USDAmount);
     }
 }
