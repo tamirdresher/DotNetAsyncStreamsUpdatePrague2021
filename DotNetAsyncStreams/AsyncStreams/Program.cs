@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Reactive.Linq;
+using System.Net.Http;
+using System.IO;
+using System.Text.Json;
+using ASPNetCore_NET6;
 
 namespace AsyncStreams
 {
@@ -12,21 +16,30 @@ namespace AsyncStreams
     {
         static async Task Main(string[] args)
         {
-            var first = AsyncEnumerable.Range(1, 10)
-                .Do(async x => await Task.Delay(1000))
-                .ToObservable();
-            var second = AsyncEnumerable.Range(20, 10)
-                .Do(async x => await Task.Delay(500))
-                .ToObservable();
+            using var httpClient = new HttpClient();
 
-            var merged =
-                first.Merge(second)
-                    .ToAsyncEnumerable();
+            using var forecastResponse = await httpClient.GetAsync(
+                "https://localhost:7167/weatherforecast",/* ASPNET 6 Backend */
+                //"https://localhost:44361/weatherforecast", /* ASPNET 5 Backend */
+                HttpCompletionOption.ResponseHeadersRead);
 
-            await foreach (var x in merged)
+            Stream forecastsStream = await forecastResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+
+            IAsyncEnumerable<WeatherForecast> weatherForecasts = JsonSerializer.DeserializeAsyncEnumerable<WeatherForecast>(
+                forecastsStream,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    DefaultBufferSize = 128
+                });
+
+
+            await foreach (var forecast in weatherForecasts)
             {
-                Console.WriteLine(x);
+                Console.WriteLine(forecast);
+
             }
+
         }
 
     }
