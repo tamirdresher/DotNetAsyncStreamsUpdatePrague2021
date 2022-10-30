@@ -21,7 +21,7 @@ namespace AsyncStreams
             
             var firstAct = await grps.FirstAsync();
 
-            await foreach (var transactionPair in firstAct.Buffer(2))
+            await foreach (var transactionPair in firstAct.Buffer(2)) //for IEnumerable<T> you can use Chunk()
             {
                 Console.WriteLine($"T1: {transactionPair[0].USDAmount} T2: {transactionPair[1].USDAmount}");
             }
