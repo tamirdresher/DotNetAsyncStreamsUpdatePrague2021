@@ -34,7 +34,7 @@ namespace AsyncStreams
 
             await foreach (var grp in grps)
             {
-                Console.WriteLine($"Account: {grp.Key} Count: {grp.CountAsync()} Sum: {grp.SumAsync(t => t.usdAmount)}");
+                Console.WriteLine($"Account: {grp.Key} Count: {await grp.CountAsync()} Sum: {await grp.SumAsync(t => t.usdAmount)}");
             }
         }
 
